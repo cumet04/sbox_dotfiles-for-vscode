@@ -59,6 +59,24 @@ set -x ANSIBLE_RETRY_FILES_ENABLED false
 test -f ~/.config/fish/secret_env && source ~/.config/fish/secret_env
 
 if tty >/dev/null
-  source ~/.config/fish/tty-config.fish
-  test -z "$TMUX"; and test -z "$VSCODE_IPC_HOOK_CLI"; and tmux
+
+  # direnv hook fish
+  function __direnv_export_eval --on-event fish_prompt;
+  	eval (direnv export fish);
+  end
+
+  # WSL2 hack; add windows ip to hosts. mainly for lemonade
+  if test -n "$WSLENV"; and not grep windows.localdomain /etc/hosts > /dev/null
+    echo 'Add windows ip to hosts:'
+    set winip (ip route show to default | cut -d' ' -f 3)
+    echo "$winip windows.localdomain" | sudo tee -a /etc/hosts
+  end
+
+  if [ -z "$TMUX" -a -z "$VSCODE_IPC_HOOK_CLI" ]
+    echo 'Clean /tmp'
+    find /tmp/ -mindepth 1 | xargs rm -rf ^/dev/null
+
+    tmux
+  end
 end 
+
